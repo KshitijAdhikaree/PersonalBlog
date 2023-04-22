@@ -6,7 +6,6 @@ import { Post } from '../../typing'
 import { GetStaticProps } from 'next'
 import PortableText from 'react-portable-text'
 import { useForm, SubmitHandler } from 'react-hook-form'
-import comment from '../../blog/schemas/comment'
 import { useSession } from 'next-auth/react'
 
 interface Props {
