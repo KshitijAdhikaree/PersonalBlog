@@ -7,6 +7,7 @@ import { GetStaticProps } from 'next'
 import PortableText from 'react-portable-text'
 import { useForm, SubmitHandler } from 'react-hook-form'
 import comment from '../../blog/schemas/comment'
+import { useSession } from 'next-auth/react'
 
 interface Props {
   post: Post
@@ -19,6 +20,8 @@ type Inputs = {
   comment: string
 }
 const Post = ({ post }: Props) => {
+  const { data: session } = useSession()
+  const [userErr, setUserErr] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const {
     register,
@@ -27,6 +30,8 @@ const Post = ({ post }: Props) => {
   } = useForm<Inputs>()
 
   const onSubmit: SubmitHandler<Inputs> = (data) => {
+    console.log(data)
+
     fetch('/api/createComment', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -37,6 +42,13 @@ const Post = ({ post }: Props) => {
       .catch((err) => {
         setSubmitted(false)
       })
+  }
+  const handleUserErr = () => {
+    if (!session) {
+      setUserErr('Please Sign In To Comment')
+    } else {
+      setUserErr('')
+    }
   }
   return (
     <div>
@@ -105,82 +117,133 @@ const Post = ({ post }: Props) => {
           </div>
         </article>
         <hr className='max-w-lg my-5 mx-auto border-[1px] border-secondaryColor' />
-        <div>
-          <p className='text-xs text-secondaryColor uppercase font-titleFont font-bold'>
-            Enjoy this Article?
-          </p>
-          <h3 className='font-titleFont text-3xl font-bold '>
-            Leave a comment below!
-          </h3>
-          <hr className='py-3 mt-2' />
-
-          {/* form starts here */}
-          {/* generating id for hooks form */}
-          <input
-            {...register('_id')}
-            type='hidden'
-            name='_id'
-            value={post._id}
-          />
-
-          <form
-            onSubmit={handleSubmit(onSubmit)}
-            className='mt-7 flex flex-col gap-6'
-          >
-            <label className='flex flex-col'>
-              <span className='font-titleFont font-semibold text-base'>
-                Name
-              </span>
-              <input
-                {...(register('name'), { required: true })}
-                className='text-base placeholder:text-sm border-b-[1px] border-secondaryColor py-1 px-4 outline-none focus-within:shadow-xl shadow-secondaryColor'
-                type='text'
-                placeholder='Enter your name'
-              />
-            </label>
-            <label className='flex flex-col'>
-              <span className='font-titleFont font-semibold text-base'>
-                Email
-              </span>
-              <input
-                {...(register('email'), { required: true })}
-                className='text-base placeholder:text-sm border-b-[1px] border-secondaryColor py-1 px-4 outline-none focus-within:shadow-xl shadow-secondaryColor'
-                type='text'
-                placeholder='Enter your Email'
-              />
-            </label>
-            <label className='flex flex-col'>
-              <span className='font-titleFont font-semibold text-base'>
-                Comment
-              </span>
-              <textarea
-                {...(register('comment'), { required: true })}
-                className='text-base placeholder:text-sm border-b-[1px] border-secondaryColor py-1 px-4 outline-none focus-within:shadow-xl shadow-secondaryColor'
-                placeholder='Enter your Comment'
-                rows={6}
-              />
-            </label>
-            <button
-              className='w-full bg-bgColor text-white text-base font-titleFont font-semibold tracking-wider uppercase py-2 rounded-xl mt-2 hover:bg-secondaryColor duration-300'
-              type='submit'
-            >
-              Submit
-            </button>
-          </form>
-          {/* Comments */}
-          <div className='w-full flex flex-col p-10 my-10 mx-auto shadow-bgColor shadow-lg space-y-2 px-4'>
-            <h3 className='text-3xl font-titleFont font-semibold'>Comments</h3>
-            <hr />
-            {post.comments.map((comment) => (
-              <div key={comment._id}>
-                <p>
-                  <span className='text-secondaryColor'>{comment.name}</span>{'  '}
-                  {comment.comment}
-                </p>
-              </div>
-            ))}
+        {submitted ? (
+          <div className='flex flex-col items-center gap-2 p-10 my-10 bg-bgColor text-white mx-auto'>
+            <h1 className='text-2xl font-bold'>
+              Thank you for submitting your comment!
+            </h1>
+            <p>Once it has been approved, it will appear below!</p>
           </div>
-        </div>
+        ) : (
+          <div>
+            <p className='text-xs text-secondaryColor uppercase font-titleFont font-bold'>
+              Enjoy this Article?
+            </p>
+            <h3 className='font-titleFont text-3xl font-bold '>
+              Leave a comment below!
+            </h3>
+            <hr className='py-3 mt-2' />
+
+            {/* form starts here */}
+            {/* generating id for hooks form */}
+            <input
+              {...register('_id')}
+              type='hidden'
+              name='_id'
+              value={post._id}
+            />
+
+            <form
+              onSubmit={handleSubmit(onSubmit)}
+              className='mt-7 flex flex-col gap-6'
+            >
+              <label className='flex flex-col'>
+                <span className='font-titleFont font-semibold text-base'>
+                  Name
+                </span>
+                <input
+                  {...register('name', { required: true })}
+                  className='text-base placeholder:text-sm border-b-[1px] border-secondaryColor py-1 px-4 outline-none focus-within:shadow-xl shadow-secondaryColor'
+                  type='text'
+                  placeholder='Enter your Name'
+                />
+                {/* Error Name */}
+                {errors.name && (
+                  <p className='text-sm font-titleFont font-semibold text-red-400 my-1 px-4'>
+                    <span className='text-base font-bold italic mr-2'>!</span>
+                    Name is required
+                  </p>
+                )}
+              </label>
+              <label className='flex flex-col'>
+                <span className='font-titleFont font-semibold text-base'>
+                  Email
+                </span>
+                <input
+                  {...register('email', { required: true })}
+                  className='text-base placeholder:text-sm border-b-[1px] border-secondaryColor py-1 px-4 outline-none focus-within:shadow-xl shadow-secondaryColor'
+                  type='text'
+                  placeholder='Enter your Email'
+                />
+                {/* Error Email */}
+                {errors.email && (
+                  <p className='text-sm font-titleFont font-semibold text-red-400 my-1 px-4'>
+                    <span className='text-base font-bold italic mr-2'>!</span>
+                    Email is required
+                  </p>
+                )}
+              </label>
+              <label className='flex flex-col'>
+                <span className='font-titleFont font-semibold text-base'>
+                  Comment
+                </span>
+                <textarea
+                  {...register('comment', { required: true })}
+                  className='text-base placeholder:text-sm border-b-[1px] border-secondaryColor py-1 px-4 outline-none focus-within:shadow-xl shadow-secondaryColor'
+                  placeholder='Enter your Comment'
+                  rows={6}
+                />
+                {/* Error Comment */}
+                {errors.comment && (
+                  <p className='text-sm font-titleFont font-semibold text-red-400 my-1 px-4'>
+                    <span className='text-base font-bold italic mr-2'>!</span>
+                    Comment is required
+                  </p>
+                )}
+              </label>
+              {session && (
+                <button
+                  className='w-full bg-bgColor text-white text-base font-titleFont font-semibold tracking-wider uppercase py-2 rounded-xl mt-2 hover:bg-secondaryColor duration-300'
+                  type='submit'
+                >
+                  Submit
+                </button>
+              )}
+            </form>
+            {!session && (
+              <button
+                onClick={handleUserErr}
+                className='w-full bg-bgColor text-white text-base font-titleFont font-semibold tracking-wider uppercase py-2 rounded-xl mt-2 hover:bg-secondaryColor duration-300'
+                type='submit'
+              >
+                Submit
+              </button>
+            )}
+            {userErr && (
+              <p className='text-sm font-titleFont text-center font-semibold text-red-600 animate-pulse my-1 px-4 '>
+                {' '}
+                <span className='text-base font-bold italic mr-2 '>!</span>
+                {userErr}
+              </p>
+            )}
+            {/* Comments */}
+            <div className='w-full flex flex-col p-10 my-10 mx-auto shadow-bgColor shadow-lg space-y-2 px-4'>
+              <h3 className='text-3xl font-titleFont font-semibold'>
+                Comments
+              </h3>
+              <hr />
+              {post.comments.map((comment) => (
+                <div key={comment._id}>
+                  <p>
+                    <span className='text-secondaryColor'>{comment.name}</span>
+                    {'  '}
+                    {comment.comment}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
       <Footer />
     </div>
